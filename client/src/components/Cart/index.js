@@ -1,24 +1,31 @@
-import React from 'react';
+// import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CartItem from '../CartItem';
 import Auth from '../../utils/auth';
 import { useStoreContext } from '../../utils/Global.State';
-import { TOGGLE_CART } from '../../utils/actions';
+import { TOGGLE_CART, ADD_MULTIPLE_TO_CART } from '../../utils/actions';
+import { idbPromise } from "../../utils/helpers";
 import './style.css';
 
 
 const Cart = () => {
     const [state, dispatch] = useStoreContext();
 
+    useEffect(() => {
+        async function getCart() {
+            const cart = await idbPromise('cart', 'get');
+            dispatch({ type: ADD_MULTIPLE_TO_CART, products: [...cart] });
+        };
+
+        if (!state.cart.length) {
+            getCart();
+        }
+    }, [state.cart.length, dispatch]);
+
     function toggleCart() {
         dispatch({ type: TOGGLE_CART });
     }
-    function calculateTotal() {
-        let sum = 0;
-        state.cart.forEach(item => {
-            sum += item.price * item.purchaseQuantity;
-        });
-        return sum.toFixed(2);
-    }
+
     if (!state.cartOpen) {
         return (
             <div className="cart-closed" onClick={toggleCart}>
@@ -28,10 +35,15 @@ const Cart = () => {
             </div>
         )
     }
+
+    function calculateTotal() {
+        let sum = 0;
+        state.cart.forEach(item => {
+            sum += item.price * item.purchaseQuantity;
+        });
+        return sum.toFixed(2);
+    }
     
-
-
-
     return (
         <div className="cart">
             <div className="close" onClick={toggleCart}>[close]</div>
@@ -47,18 +59,18 @@ const Cart = () => {
                             Auth.loggedIn() ?
                                 <button>
                                     Checkout
-            </button>
+                                </button>
                                 :
                                 <span>(log in to check out)</span>
                         }
                     </div>
                 </div>
-            ) : (
+                ) : (
                     <h3>
                         <span role="img" aria-label="shocked">
                             😱
-      </span>
-      You haven't added anything to your cart yet!
+                    </span>
+                    You haven't added anything to your cart yet!
                     </h3>
                 )}
         </div>
